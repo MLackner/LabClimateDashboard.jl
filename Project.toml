@@ -1,0 +1,13 @@
+name = "LabClimateDashboard"
+uuid = "6fb262fb-409f-4dac-b754-5102545f4892"
+authors = ["MLackner <lacknersmichael@gmail.com> and contributors"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
