@@ -1,0 +1,81 @@
+##---------------------CALLBACKS-------------------##
+
+# Update the figure according to the date range that was picked
+# Refresh the figure in the interval defined by INTERVAL. We will only do this
+# if we are looking at live data, i.e. if the date range contains the last
+# update. 
+callback!(app,
+    Output("log-graph", "figure"), 
+    [
+        Input("date-picker-range", "start_date"), 
+        Input("date-picker-range", "end_date"), 
+        Input("refresh-interval", "n_intervals"),
+    ],
+    State("log-graph", "figure") # we'll pull the data out of it
+) do start_date_str, end_date_str, n_intervals, fig
+    # parse dates as DateTime
+    start_date = DateTime(start_date_str)
+    end_date   = DateTime(end_date_str)
+
+    # in the first go, load the data into the dataframe and put that data into
+    # the figure
+    if n_intervals == 0
+        load_logdata!(df, LOGDATA_PATH)
+        replace_figure_data!(fig, df, (start_date, end_date))
+    end
+ 
+    ctx = Dash.callback_context()
+    isempty(ctx.triggered) && return fig
+    if ctx.triggered[1].prop_id == "refresh-interval.n_intervals"
+        # We have an auto update. So we'll refresh the figure. We'll only do
+        # this if the selected end date is after in the future
+        end_date < now() && return fig
+        
+        load_logdata!(df, LOGDATA_PATH) 
+        update_figure!(fig, df, end_date)
+        return fig
+    elseif ctx.triggered[1].prop_id in ["date-picker-range.start_date", "date-picker-range.end_date"]
+        replace_figure_data!(fig, df, (start_date, end_date))
+        return fig
+    else
+        @warn "Callback was not handled"
+        return fig
+    end
+end
+
+# Update the temperature stats
+callback!(app,
+    Output("temperature-stats", "children"), 
+    [
+        Input("date-picker-range", "start_date"), 
+        Input("date-picker-range", "end_date"),
+        Input("refresh-interval", "n_intervals"),
+    ]
+) do start_date_str, end_date_str, n_intervals
+    # Don't do anything for the initial run (n_intervals == 0)
+    n_intervals == 0 && return html_div()
+
+    start_date = Dates.DateTime(start_date_str)
+    end_date = Dates.DateTime(end_date_str)
+    stats = statistics(df, :temperature, (start_date, end_date))
+    generate_stats(stats, "°C")
+end
+
+# Update the temperature stats
+callback!(app,
+    Output("humidity-stats", "children"), 
+    [
+        Input("date-picker-range", "start_date"), 
+        Input("date-picker-range", "end_date"),
+        Input("refresh-interval", "n_intervals"),
+    ]
+) do start_date_str, end_date_str , n_intervals
+    # Don't do anything for the initial run (n_intervals == 0)
+    n_intervals == 0 || isempty(df[]) && return html_div()
+
+    
+    start_date = Dates.DateTime(start_date_str)
+    end_date = Dates.DateTime(end_date_str)
+    stats = statistics(df, :humidity, (start_date, end_date))
+    generate_stats(stats, "%")
+end
