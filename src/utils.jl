@@ -10,7 +10,8 @@ data to be read we put in some default values because other functionality relies
 on data in the data frame.
 """
 function load_logdata!(df::Ref{DataFrame}, path)
-    df[] = DataFrame(date=DateTime[], temperature=Float64[], humidity=Float64[])
+    df[] = DataFrame(date=DateTime[], temperature=Float64[], humidity=Float64[]) 
+
     for file in readdir(path)
         # skip file if it is not a .log file
         splitext(file)[2] ≠ ".log" && continue

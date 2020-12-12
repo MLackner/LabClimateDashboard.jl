@@ -11,6 +11,7 @@ using Statistics
 import Sockets: getipaddr
 
 include("utils.jl")
+include("layout.jl")
 
 # default lower limit of the time axis of the plot
 const START_DATE = now() - Dates.Day(3)
@@ -19,28 +20,29 @@ const INTERVAL = 5
 # when did the last update of the plot happen -> we need this to evaluate what
 # is new data and should be appended to the data already in the plot
 const last_update = Ref{DateTime}(now()) # use Ref to make a global of fixed type
-# the path where the data resides
-# TODO: this should be implemented via a config file
-const LOGDATA_PATH = "/Users/lackner/.julia/dev/HYT939Logger/log" 
 # Have the dataframe that holds all the values global
 const df = Ref{DataFrame}()
+global LOGDATA_PATH = ""
 # initialize the app
 const app = dash(external_stylesheets=["https://codepen.io/chriddyp/pen/bWLwgP.css"])
+layout!(app)
 
-include("layout.jl")
 include("callbacks.jl")
 
 """
-    run(;port=8050, debug=false)
+    run(LOGDATA_PATH; port=8050, debug=false)
 
-Start the server.
+Start the server. `LOGDATA_PATH` should be the path the the folder where the
+log data resides.
 """
-function run(;port=8050, debug=false)
-    println("Loading the log data...")
-    load_logdata!(df, LOGDATA_PATH) 
+function run(logdata_path; port=8050, debug=false) 
+    global LOGDATA_PATH = logdata_path
 
-    println("Starting the server...")
-    run_server(app, "0.0.0.0"; debug)
+    println("Loading in the log data...")
+    load_logdata!(df, LOGDATA_PATH) 
+    sort!(df[])
+
+    isempty(df[]) && @warn "Did not find any data!"
 
     ip4 = getipaddr()
     println("""
@@ -53,6 +55,9 @@ function run(;port=8050, debug=false)
 
     Terminate the process by pressing 'Ctrl+c'
     """)
+
+    println("Starting the server...")
+    run_server(app, "0.0.0.0"; debug)
 
     nothing
 end
