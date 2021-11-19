@@ -48,17 +48,17 @@ be appended.
 """
 function update_figure!(fig, df, end_date)
     # if we get an empty figure we'll return right away
-    isempty(fig.data[1].x) && return
+    isempty(fig[:data][1][:x]) && return
 
     # we have to append the data that was generated after the last update up
     # until the end_date
-    last_date = fig.data[1].x[end] |> DateTime
+    last_date = fig[:data][1][:x][end] |> DateTime
     dff = filter_dates(df, last_date, end_date)
 
-    append!(fig.data[1].x, dff.date)
-    append!(fig.data[1].y, dff.temperature)
-    append!(fig.data[2].x, dff.date)
-    append!(fig.data[2].y, dff.humidity)
+    append!(fig[:data][1][:x], dff.date)
+    append!(fig[:data][1][:y], dff.temperature)
+    append!(fig[:data][2][:x], dff.date)
+    append!(fig[:data][2][:y], dff.humidity)
 
     nothing
 end
@@ -78,8 +78,12 @@ function replace_figure_data!(fig, df, (date_range))
     # inside the data arrays but not replace them. In order to achieve this, we
     # first delete all elements of the arrays and then append the new values.
     for (array, new_values) in zip(
-        [fig.data[1].x, fig.data[1].y, fig.data[2].x, fig.data[2].y],
-        [dff.date, dff.temperature, dff.date, dff.humidity]
+        # the x and y arrays might be empty and may be passed as
+        #   JSON3.Array{Union{}, Base.CodeUnits{UInt8, String}, SubArray{UInt64, 1, Vector{UInt64}, Tuple{UnitRange{Int64}}, true}}
+        # we use `.|> Vector{Float64}` to convert them to an appropriate type
+        # the `deleteat!` and `append!` function can work with.
+        [fig[:data][1][:x], fig[:data][1][:y], fig[:data][2][:x], fig[:data][2][:y]],
+        [string.(dff.date), dff.temperature, string.(dff.date), dff.humidity]
     )
         deleteat!(array, eachindex(array)) # removes all elements
         append!(array, new_values)

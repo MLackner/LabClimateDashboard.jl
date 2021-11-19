@@ -4,7 +4,7 @@
 
 module LabClimateDashboard 
 
-using Dash, DashHtmlComponents, DashCoreComponents
+using Dash
 using DataFrames, CSV
 using Dates
 using Statistics
